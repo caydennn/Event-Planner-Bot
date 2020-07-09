@@ -107,7 +107,7 @@ def main():
     add_eating_conv = ConversationHandler(
         entry_points = [CommandHandler('add_eating', AEcommands.add_eating)],
         states = {
-            AEcommands.GETPLACE: [MessageHandler(Filters.regex('^(/cancel)$'), AEcommands.cancel),
+            AEcommands.GETPLACE: [MessageHandler(Filters.regex('^(/cancel|/cancel@event_planner_bot)$'), AEcommands.cancel),
                                 MessageHandler(Filters.text, AEcommands.get_place) ]
         },
         fallbacks = []
@@ -119,7 +119,7 @@ def main():
     remove_eating_conv = ConversationHandler(
         entry_points= [CommandHandler('rm_eating', REcommands.remove_eating)],
         states = {
-            REcommands.REMOVEPLACE: [MessageHandler(Filters.regex('^(/cancel)$'), REcommands.cancel),
+            REcommands.REMOVEPLACE: [MessageHandler(Filters.regex('^(/cancel|/cancel@event_planner_bot)$'), REcommands.cancel),
                                     MessageHandler(Filters.text, REcommands.remove_place)   ]
         },
         fallbacks = []
