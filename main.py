@@ -108,7 +108,7 @@ def main():
         entry_points = [CommandHandler('add_eating', AEcommands.add_eating)],
         states = {
             AEcommands.GETPLACE: [MessageHandler(Filters.regex('^(/cancel|/cancel@event_planner_bot)$'), AEcommands.cancel),
-                                MessageHandler(Filters.text, AEcommands.get_place) ]
+                                MessageHandler(Filters.regex('^-'), AEcommands.get_place) ]
         },
         fallbacks = []
     )
@@ -120,7 +120,7 @@ def main():
         entry_points= [CommandHandler('rm_eating', REcommands.remove_eating)],
         states = {
             REcommands.REMOVEPLACE: [MessageHandler(Filters.regex('^(/cancel|/cancel@event_planner_bot)$'), REcommands.cancel),
-                                    MessageHandler(Filters.text, REcommands.remove_place)   ]
+                                    MessageHandler(Filters.regex('^-+'), REcommands.remove_place)   ]
         },
         fallbacks = []
     )
@@ -135,6 +135,7 @@ def main():
     dp.add_handler(CommandHandler('echo', echo))
     dp.add_handler(MessageHandler(Filters.location, loc.location))
     dp.add_handler(CommandHandler('kbstart', kbstart))
+
     """ Handlers """ 
     # dp.add_handler(CommandHandler('add_eating', add_eating))
     dp.add_handler(CommandHandler('list_eat', list_eating))

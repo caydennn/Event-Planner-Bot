@@ -173,7 +173,7 @@ def remove_food_data(group_id, food_place):
         conn = connect()
         cur = conn.cursor()
         sql_command = """DELETE FROM {0}
-        WHERE ({0}.group_id =%s AND {0}.food_place = %s)""".format(table_name)
+        WHERE ({0}.group_id =%s AND UPPER({0}.food_place) = %s)""".format(table_name) #! 
         
         cur.execute(sql_command, (group_id, food_place))
         conn.commit()

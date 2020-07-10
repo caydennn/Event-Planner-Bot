@@ -18,7 +18,9 @@ def get_place(update, context):
 
     #* 2) Get food place 
     food_place = update.message.text 
-    context.bot.send_message (update.effective_chat.id, "Adding... ⏫⏫⏫")
+    food_place = food_place.lstrip('-').lstrip()
+
+    context.bot.send_message (update.effective_chat.id, "Adding {}... ⏫⏫⏫".format(food_place))
 
     if food_place == "":
         update.message.reply_text("Please key a non empty food_place")

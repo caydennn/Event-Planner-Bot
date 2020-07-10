@@ -18,20 +18,38 @@ def remove_place(update, context):
 
     #* 2) Get food place 
     food_place = update.message.text 
-    
-    context.bot.send_message (update.effective_chat.id, "Removing... 🧹🧹🧹")
+    food_place = food_place.lstrip('-').lstrip()
+
+    context.bot.send_message (update.effective_chat.id, "Removing {}... 🧹🧹🧹".format(food_place))
 
     if food_place == "":
         update.message.reply_text("Please key a non empty food_place")
         return
+
+
         
      #* 3) Update the database if the group exists, if not return an error message
     if (sqlf.check_id_exist(group_id)):
+
         try:
-            sqlf.remove_food_data(group_id, food_place)
+            _food_place_list = sqlf.get_group_food_data(group_id)
+            if food_place.isnumeric():
+                print("Received INTEGER VALUE")
+                indexRemove = int(food_place) - 1
+                placeRemove = _food_place_list[indexRemove]
+                print ("Initial Food List: {}".format(_food_place_list))
+                print ("Index Remove: {}".format(indexRemove))
+                print ("Place Remove: {}".format(placeRemove))
+                sqlf.remove_food_data(group_id, placeRemove.upper())
+
+            else:
+                food_place = food_place.upper()
+                sqlf.remove_food_data(group_id, food_place)
+
             #* 4) Verify the update by sending a list of all current eating places
             food_place_list = sqlf.get_group_food_data(group_id)
             return_string = ''
+
             for idx in range(0 , len(food_place_list)):
                 return_string += str(idx+1) + ') ' + food_place_list[idx] + '\n'
                 
