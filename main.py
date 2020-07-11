@@ -6,7 +6,7 @@ import random
 from dotenv import load_dotenv
 import addEatingCommands as AEcommands
 import removeEatingCommands as REcommands 
-import location as loc 
+import infoFunctions as infof 
 
 from os.path import join, dirname
 from telegram import (Poll, ParseMode, KeyboardButton, KeyboardButtonPollType,
@@ -124,6 +124,20 @@ def main():
         },
         fallbacks = []
     )
+
+
+    '''
+    Get Info Conversation Handler
+    '''
+    get_location_conv = ConversationHandler(
+        entry_points = [CommandHandler('get_info', infof.choose_location)], #! check this
+        states = {infof.GETPLACE: [MessageHandler(Filters.regex('^(/cancel|/cancel@event_planner_bot)$'), infof.cancel),
+                                  MessageHandler(Filters.regex('^-+'), infof.get_place_location)]
+
+        },
+
+        fallbacks=[]
+    )
     
     updater = Updater(token = TOKEN, use_context=True)
     dp = updater.dispatcher 
@@ -133,7 +147,7 @@ def main():
     dp.add_handler(CommandHandler('hello', say_hello))
     dp.add_handler(CommandHandler('get_bot', get_bot))
     dp.add_handler(CommandHandler('echo', echo))
-    dp.add_handler(MessageHandler(Filters.location, loc.location))
+    dp.add_handler(MessageHandler(Filters.location, infof.test_get_location))
     dp.add_handler(CommandHandler('kbstart', kbstart))
 
     """ Handlers """ 
@@ -143,6 +157,7 @@ def main():
     dp.add_handler(CommandHandler('get_eat', get_eating))
     dp.add_handler(add_eating_conv)
     dp.add_handler(remove_eating_conv)
+    dp.add_handler(get_location_conv)
     
     updater.start_polling()
     updater.idle()

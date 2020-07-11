@@ -34,12 +34,8 @@ def remove_place(update, context):
         try:
             _food_place_list = sqlf.get_group_food_data(group_id)
             if food_place.isnumeric():
-                print("Received INTEGER VALUE")
                 indexRemove = int(food_place) - 1
                 placeRemove = _food_place_list[indexRemove]
-                print ("Initial Food List: {}".format(_food_place_list))
-                print ("Index Remove: {}".format(indexRemove))
-                print ("Place Remove: {}".format(placeRemove))
                 sqlf.remove_food_data(group_id, placeRemove.upper())
 
             else:
