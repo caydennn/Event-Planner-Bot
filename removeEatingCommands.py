@@ -20,7 +20,7 @@ def remove_place(update, context):
     food_place = update.message.text 
     food_place = food_place.lstrip('-').lstrip()
 
-    context.bot.send_message (update.effective_chat.id, "Removing {}... 🧹🧹🧹".format(food_place))
+    context.bot.send_message (update.effective_chat.id, "Loading ... ".format(food_place))
 
     if food_place == "":
         update.message.reply_text("Please key a non empty food_place")
@@ -36,9 +36,12 @@ def remove_place(update, context):
             if food_place.isnumeric():
                 indexRemove = int(food_place) - 1
                 placeRemove = _food_place_list[indexRemove]
+                context.bot.send_message (update.effective_chat.id, "Removing {}... 🧹🧹🧹".format(placeRemove))
                 sqlf.remove_food_data(group_id, placeRemove.upper())
 
             else:
+                context.bot.send_message (update.effective_chat.id, "Removing {}... 🧹🧹🧹".format(food_place))
+
                 food_place = food_place.upper()
                 sqlf.remove_food_data(group_id, food_place)
 

@@ -37,7 +37,7 @@ def get_results(food_place):
     'name'
     'opening_hours': {'open_now': True}
     '''
-    query = food_place 
+    query = 'Singapore ' + food_place 
     url = "https://maps.googleapis.com/maps/api/place/textsearch/json?"
     r = requests.get(url + 'query=' + query +
                         '&key=' + API_KEY) 
@@ -65,8 +65,8 @@ def get_place_location(update, context ):
 
     food_place = update.message.text 
     food_place = food_place.lstrip('-').lstrip()
+    context.bot.send_message (update.effective_chat.id, "Loading ... ".format(food_place))
 
-    context.bot.send_message (update.effective_chat.id, "Getting Info about {} ... 🌎🌍🌏".format(food_place))
     if food_place == "":
         update.message.reply_text("Please key a non empty food_place")
         return
@@ -78,10 +78,13 @@ def get_place_location(update, context ):
         if food_place.isnumeric():
             indexFind = int(food_place) - 1
             placeToFind = _food_place_list[indexFind]
+            context.bot.send_message (update.effective_chat.id, "Getting Info about {} ... 🌎🌍🌏".format(placeToFind))
+
             results = get_results(placeToFind)
             
 
         else:
+            context.bot.send_message (update.effective_chat.id, "Getting Info about {} ... 🌎🌍🌏".format(food_place))
             results = get_results(food_place)
             
         name = results['name']
@@ -108,9 +111,14 @@ def get_place_location(update, context ):
 
     except Exception as e:
         print (e)
+        print ("Error geting location of food_place")
+        context.bot.send_message(update.effective_chat.id, "Error getting info about food place. Please check again :)")
+
         if results:
             print(results)
-        print ("Error geting location of food_place")
+       
+    return ConversationHandler.END
+
 
 
 def cancel(update, context):
