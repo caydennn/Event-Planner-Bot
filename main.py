@@ -45,7 +45,7 @@ def get_bot (update, context):
     context.bot.send_message(update.effective_user.id, "This is the bot {}".format(context.bot))
 
 def help(update, context):
-    context.bot.send_message(update.effective_user.id, "Get help planning outings! Always add a dash ('-') before replying to the bot 😊")
+    context.bot.send_message(update.effective_chat.id, "Get help planning outings! Always add a dash ('-') before replying to the bot 😊")
 
 def list_eating(update, context):
     # 1) Get the current group id

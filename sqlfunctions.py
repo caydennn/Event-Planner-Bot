@@ -126,6 +126,7 @@ def insert_group_data(group_id, group_title):
         sql_command = """ INSERT INTO {} VALUES (%s, %s)""".format(table_name)
         cur.execute(sql_command, (group_id, group_title))
         conn.commit()
+        conn.close()
         print("Group Data for {} inserted successfully".format(group_title))
     except Exception as e:
         print (e)
