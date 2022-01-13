@@ -1,8 +1,15 @@
+/bin
+/lib
 /.env
+/api_test
+
+
 /creatingTable.py
 /data.json
 /pandasjson.py
 /pollbottest.py
 /settings.py
+
+
 **/Google*Search*Notebook/
 Google\Search\Notebook

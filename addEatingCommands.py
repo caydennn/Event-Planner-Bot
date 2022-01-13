@@ -1,11 +1,13 @@
 from telegram.ext import ConversationHandler
+from telegram.ext.callbackcontext import CallbackContext
+from telegram.update import Update
 import sqlfunctions as sqlf 
 
 """ This command adds an eating place for the group """
 GETPLACE = range(1)
 
-def add_eating(update, context):
-    update.message.reply_text("Add a new eating place here, or /cancel")
+def add_eating(update: Update, context: CallbackContext):
+    update.message.reply_text("Add a new eating place to your group here by typing it after a hyphen Eg. '- McDonalds' , or press /cancel to stop.")
     return GETPLACE 
 
 def get_place(update, context):
@@ -51,7 +53,12 @@ def cancel(update, context):
     return ConversationHandler.END
 
 
-''' DEPRECATED FUNCTION '''
+''' 
+# DEPRECATED FUNCTION 
+This function used to take the arguments following the /add_eating command 
+This is no longer used.
+
+'''
 
 def OLD_add_eating(update, context):
     group = update.effective_chat

@@ -1,0 +1,95 @@
+{
+    "data": "0",
+    "id": "1135644136850834691",
+    "chat_instance": "7652997411426515234",
+    "message": {
+        "text": "Please choose which to remove:",
+        "photo": [],
+        "new_chat_members": [],
+        "new_chat_photo": [],
+        "channel_chat_created": "False",
+        "reply_to_message": {
+            "text": "/remove_updated@tts_helper_bot",
+            "photo": [],
+            "new_chat_members": [],
+            "new_chat_photo": [],
+            "channel_chat_created": "False",
+            "delete_chat_photo": "False",
+            "supergroup_chat_created": "False",
+            "caption_entities": [],
+            "group_chat_created": "False",
+            "message_id": 2476,
+            "date": 1641231499,
+            "chat": {
+                "type": "group",
+                "title": "testgrp",
+                "id": -469216070,
+                "all_members_are_administrators": "True"
+            },
+            "entities": [
+                {
+                    "type": "bot_command",
+                    "length": 30,
+                    "offset": 0
+                }
+            ],
+            "from": {
+                "username": "yongta",
+                "is_bot": "False",
+                "language_code": "en",
+                "id": 80749729,
+                "first_name": "cayden"
+            }
+        },
+        "delete_chat_photo": "False",
+        "supergroup_chat_created": "False",
+        "caption_entities": [],
+        "group_chat_created": "False",
+        "message_id": 2477,
+        "date": 1641231503,
+        "reply_markup": {
+            "inline_keyboard": [
+                [
+                    {
+                        "text": "Crooked Cooks",
+                        "callback_data": "0"
+                    },
+                    {
+                        "text": "My home",
+                        "callback_data": "1"
+                    }
+                ],
+                [
+                    {
+                        "text": "The Roti Prata House",
+                        "callback_data": "2"
+                    },
+                    {
+                        "text": "Bowen Western",
+                        "callback_data": "3"
+                    }
+                ]
+            ]
+        },
+        "chat": {
+            "type": "group",
+            "title": "testgrp",
+            "id": -469216070,
+            "all_members_are_administrators": ""True""
+        },
+        "entities": [],
+        "from": {
+            "username": "tts_helper_bot",
+            "is_bot": "True",
+            "id": 1331338404,
+            "first_name": "TTS-Helper"
+        }
+    },
+    "from": {
+        "username": "claudiakoh",
+        "is_bot": "False",
+        "language_code": "en",
+        "id": 264412755,
+        "first_name": "claud"
+    }
+}

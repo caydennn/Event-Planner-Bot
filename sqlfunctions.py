@@ -168,9 +168,10 @@ def insert_food_data(group_id, food_place):
         print (e)
         print ("Error inserting food data")
 
-def remove_food_data(group_id, food_place):
+def remove_food_data(group_id: str, food_place: str):
     try:
         table_name = "groupfood"
+        food_place = food_place.upper()
         conn = connect()
         cur = conn.cursor()
         sql_command = """DELETE FROM {0}
