@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 import addEatingCommands as AEcommands
 import removeEatingCommands as REcommands
 import infoFunctions as infof
+import pollFunctions as pollf
 
 from os.path import join, dirname
 from telegram import (Poll, ParseMode, KeyboardButton, KeyboardButtonPollType,
@@ -210,6 +211,7 @@ def main():
     dp.add_handler(CommandHandler('help', help))
     dp.add_handler(CommandHandler('list_eat', list_eating))
     dp.add_handler(CommandHandler('get_eat', get_random_eating))
+    dp.add_handler(CommandHandler('create_poll', pollf.createPoll))
     dp.add_handler(add_eating_conv)
     dp.add_handler(remove_eating_conv)
     dp.add_handler(get_location_conv)

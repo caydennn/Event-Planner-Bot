@@ -88,10 +88,7 @@ def remove_eating_callback(update: Update, context: CallbackContext) -> None:
 
     return ConversationHandler.END
 
-
-''' DEPRECATED FUNCTION '''
-
-
+''' DEPRECATED FUNCTIONS BELOW '''
 def old_remove(update, context):
     # * 1) Get the current group ID and group name
     group = update.effective_chat
