@@ -249,6 +249,7 @@ async def main() -> None:
         return Exception ("WEBHOOK_URL is not set")
     # Pass webhook settings to telegram
     await dp.bot.set_webhook(url=f"{WEBHOOK_URL}/telegram")
+    logger.info("Webhook set")
 
 
     @app.post("/telegram")
@@ -262,8 +263,13 @@ async def main() -> None:
     @app.get('/')
     async def root():
         return {'message': 'Hello World'}
-    webserver = uvicorn.Server(config = uvicorn.Config(app, host = '0.0.0.0', port = 8080))
+    port = int(os.environ.get('PORT', 8080))
+    webserver = uvicorn.Server(config = uvicorn.Config(app, host = '0.0.0.0', port = port))
     
+    @app.get("/set_webhook")
+    async def set_webhook(_: Request) -> PlainTextResponse:
+        await dp.bot.set_webhook(url=f"{WEBHOOK_URL}/telegram")
+        return PlainTextResponse(content="Webhook set to {WEBHOOK_URL}/telegram")
     
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(request: Request, exc: RequestValidationError):
