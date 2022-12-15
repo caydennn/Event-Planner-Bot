@@ -1,8 +1,9 @@
+import datetime
 import psycopg2
 import os
 from os.path import join, dirname
 from dotenv import load_dotenv
-
+import pytz
 dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
 
@@ -94,6 +95,10 @@ def get_group_food_data(group_id):
         for data in rows:
             food_place_list.append(data[0])
         print ("List of food ", food_place_list)
+          # update the last modified time for the group
+        now = datetime.datetime.now()
+        now = now.astimezone(pytz.timezone('Asia/Singapore'))
+        update_group_last_modified(group_id, now)
         conn.commit()
         conn.close()
         return food_place_list
@@ -123,8 +128,17 @@ def insert_group_data(group_id, group_title):
         table_name = "groupnames"
         conn = connect()
         cur = conn.cursor()
+        # create an sql command that also tracks the time the group was created
+        # sql_command = """ INSERT INTO {} VALUES (%s, %s, %s)""".format(table_name)
+        # cur.execute(sql_command, (group_id, group_title, datetime.datetime.now()))
+        
+
         sql_command = """ INSERT INTO {} VALUES (%s, %s)""".format(table_name)
         cur.execute(sql_command, (group_id, group_title))
+          # update the last modified time for the group
+        now = datetime.datetime.now()
+        now = now.astimezone(pytz.timezone('Asia/Singapore'))
+        update_group_last_modified(group_id, now)
         conn.commit()
         conn.close()
         print("Group Data for {} inserted successfully".format(group_title))
@@ -148,6 +162,26 @@ def remove_group_data(group_id):
     except Exception as e:
         print (e)
         print ("Error removing GROUP data")
+        
+        
+        
+def update_group_last_modified(group_id, timestamp):
+    try:
+        table_name = "groupnames"
+        conn = connect()
+        cur = conn.cursor()
+        sql_command = """
+        UPDATE {}
+        SET last_modified = %s
+        WHERE group_id = %s
+        """.format(table_name)
+        cur.execute(sql_command, (timestamp, group_id))
+        conn.commit()
+        conn.close()
+        print("Group Last Modified updated for id {}".format(group_id))
+    except Exception as e:
+        print (e)
+        print ("Error updating group last modified")
 
 def insert_food_data(group_id, food_place):
     try:
@@ -158,8 +192,15 @@ def insert_food_data(group_id, food_place):
         VALUES (%s, %s)
         """.format(table_name)
         # VALUES (( SELECT group_id FROM groupnames WHERE group_title = %s), %s) 
+        # Create an sql query that also tracks the time the food place was added
+
 
         cur.execute(sql_command, (group_id, food_place))
+
+        # update the last modified time for the group
+        now = datetime.datetime.now()
+        now = now.astimezone(pytz.timezone('Asia/Singapore'))
+        update_group_last_modified(group_id, now)
         conn.commit()
         print ("FOOD Data inserted successfully")
         conn.close()
@@ -167,6 +208,7 @@ def insert_food_data(group_id, food_place):
     except Exception as e:
         print (e)
         print ("Error inserting food data")
+        return False
 
 def remove_food_data(group_id: str, food_place: str):
     try:
@@ -178,6 +220,11 @@ def remove_food_data(group_id: str, food_place: str):
         WHERE ({0}.group_id =%s AND UPPER({0}.food_place) = %s)""".format(table_name) #! 
         
         cur.execute(sql_command, (group_id, food_place))
+        
+        # update the last modified time for the group
+        now = datetime.datetime.now()
+        now = now.astimezone(pytz.timezone('Asia/Singapore'))
+        update_group_last_modified(group_id, now)
         conn.commit()
         print ("Data removed successfully")
         conn.close()

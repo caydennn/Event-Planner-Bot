@@ -1,65 +1,69 @@
-import logging
+import asyncio
 import json
+import logging
 import os
-from telegram.ext.callbackcontext import CallbackContext
-
-from telegram.ext.callbackqueryhandler import CallbackQueryHandler
-from telegram.update import Update
-import sqlfunctions as sqlf
 import random
+from dataclasses import dataclass
+from os.path import dirname, join
+
+import uvicorn
 from dotenv import load_dotenv
+from fastapi import FastAPI, Request, Response, status
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
+from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.constants import ParseMode
+from telegram.ext import (Application, CallbackContext, CallbackQueryHandler,
+                          CommandHandler, ContextTypes, ConversationHandler,
+                          ExtBot, MessageHandler, PollAnswerHandler,
+                          PollHandler, Updater, filters)
+
 import addEatingCommands as AEcommands
-import removeEatingCommands as REcommands
 import infoFunctions as infof
 import pollFunctions as pollf
-
-from os.path import join, dirname
-from telegram import (Poll, ParseMode, KeyboardButton, KeyboardButtonPollType,
-                      ReplyKeyboardMarkup, ReplyKeyboardRemove)
-from telegram.ext import (Updater, CommandHandler, PollAnswerHandler, PollHandler, MessageHandler,
-                          Filters, ConversationHandler)
-from telegram.utils.helpers import mention_html
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+import removeEatingCommands as REcommands
+import sqlfunctions as sqlf
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def start(update, context):
-    bot_commands = context.bot.get_my_commands()
+async def start(update, context):
+    logger.info("Received start command from {} , {}".format(update.effective_user.id, update.effective_user.username))
+    bot_commands = await context.bot.get_my_commands()
     """ Inform User about what this bot can do """
-    update.message.reply_text(
+    await  update.message.reply_text(
         "These are the available commands for the bot: {}".format(bot_commands))
 
 
-def say_hello(update, context):
+async def say_hello(update, context):
 
     # User id will take the person sending out the command
-    context.bot.send_message(
+    await context.bot.send_message(
         update.effective_user.id, "This message is sent by the context using USER ID {}. Hello!".format(update.effective_user.id))
 
     # Chat id will take the group id
-    context.bot.send_message(
+    await context.bot.send_message(
         update.effective_chat.id, "This message is sent by the context using CHAT ID {}. Hello!".format(update.effective_chat.id))
 
-    update.message.reply_text("This message is sent by the update. Hello!")
+    await update.message.reply_text("This message is sent by the update. Hello!")
 
 
-def echo(update, context):
+async def echo(update, context):
     # text = update.message.text
     listCommand = context.args[0:]
     command = ' '.join(listCommand)
 
-    update.message.reply_text("Update.message.text is {}".format(command))
+    await update.message.reply_text("Update.message.text is {}".format(command))
 
 
-def get_bot(update, context):
-    context.bot.send_message(update.effective_user.id,
-                             "This is the bot {}".format(context.bot))
+async def get_bot(update, context):
+    await context.bot.send_message(update.effective_user.id,
+                             "This is the bot {}".format(await context.bot))
 
 
-def help(update: Update, context: CallbackContext):
+async def help(update: Update, context: CallbackContext):
     help_text = """
 *Welcome to Event Planner Bot*
 Hey there! I can help you plan your outings with your social groups by keeping track of your favorite eating places!
@@ -73,15 +77,15 @@ Hey there! I can help you plan your outings with your social groups by keeping t
 /create_poll - Create a poll from your groups Top 10 Eating Places! 
 /help - View this help message if you ever forget what I can do ☺️ 
     """
-
+    logger.info("Received help command from {} , {}".format(update.effective_user.id, update.effective_user.username))
     help_text = help_text.replace("!" , "\\!").replace("-", "\\-").replace("_", "\\_")
 
-    context.bot.send_message(update.effective_chat.id , help_text, parse_mode =  ParseMode.MARKDOWN_V2)
-    context.bot.send_message(
+    await context.bot.send_message(update.effective_chat.id , help_text, parse_mode =  ParseMode.MARKDOWN_V2)
+    await context.bot.send_message(
         update.effective_chat.id, "Get help planning outings! Always add a dash ('-') before replying to the bot 😊")
 
 
-def list_eating(update, context):
+async def list_eating(update, context):
     # 1) Get the current group id
     group = update.effective_chat
     group_id = str(group.id)
@@ -96,11 +100,11 @@ def list_eating(update, context):
     for idx in range(0, len(food_place_list)):
         return_string += str(idx+1) + ') ' + food_place_list[idx] + '\n'
 
-    context.bot.send_message(update.effective_chat.id, "The list of current food places for {0} is: \n{1}".format(
+    await context.bot.send_message(update.effective_chat.id, "The list of current food places for {0} is: \n{1}".format(
         group_title, return_string))
 
 
-def get_random_eating(update, context):
+async def get_random_eating(update, context):
     # 1) Get the current group id
     group = update.effective_chat
     group_id = str(group.id)
@@ -113,12 +117,12 @@ def get_random_eating(update, context):
     n = random.randint(0, len(food_place_list))
     picked_place = food_place_list[n]
     print("Picked place {}".format(picked_place))
-    context.bot.send_message(
+    await context.bot.send_message(
         update.effective_chat.id, "Maybe try {}?😋 \nIf not, type /get_eat to get another place!".format(picked_place))
 
 
-def kbstart(update, context):
-    update.message.reply_text(main_menu_message(),
+async def kbstart(update, context):
+    await update.message.reply_text(main_menu_message(),
                               reply_markup=main_menu_keyboard())
 
 
@@ -133,41 +137,61 @@ def main_menu_keyboard():
     return InlineKeyboardMarkup(keyboard)
 
 
-def main():
+
+
+@dataclass
+class WebhookUpdate:
+    """Simple dataclass to wrap a custom update type"""
+
+    user_id: int
+    payload: str
+
+
+class CustomContext(CallbackContext[ExtBot, dict, dict, dict]):
+    """
+    Custom CallbackContext class that makes `user_data` available for updates of type
+    `WebhookUpdate`.
+    """
+
+    @classmethod
+    def from_update(
+        cls,
+        update: object,
+        application: "Application",
+    ) -> "CustomContext":
+        if isinstance(update, WebhookUpdate):
+            return cls(application=application, user_id=update.user_id)
+        return super().from_update(update, application)
+
+async def main() -> None:
     dotenv_path = join(dirname(__file__), '.env')
     load_dotenv(dotenv_path)
     TOKEN = os.environ.get("TOKEN")
-
+    app = FastAPI()
+    
+   
+    
+    
+    
+    print ("TOKEN is {}".format(TOKEN))
     ''' 
     Add Eating Conversation Handler 
     '''
     add_eating_conv = ConversationHandler(
         entry_points=[CommandHandler('add_eating', AEcommands.add_eating)],
         states={
-            AEcommands.GETPLACE: [MessageHandler(Filters.regex('^(/cancel|/cancel@event_planner_bot)$'), AEcommands.cancel),
-                                  MessageHandler(Filters.regex('^-'), AEcommands.get_place)]
+            AEcommands.GETPLACE: [MessageHandler(filters.Regex('^(/cancel|/cancel@event_planner_bot)$'), AEcommands.cancel),
+                                  MessageHandler(filters.Regex('^-'), AEcommands.get_place)]
         },
         fallbacks=[]
     )
-
-    '''
-    Remove Eating Conversation Handler 
-    '''
-    # remove_eating_conv = ConversationHandler(
-    #     entry_points= [CommandHandler('rm_eating', REcommands.remove_eating)],
-    #     states = {
-    #         REcommands.REMOVEPLACE: [MessageHandler(Filters.regex('^(/cancel|/cancel@event_planner_bot)$'), REcommands.cancel),
-    #                                 MessageHandler(Filters.regex('^-+'), REcommands.remove_place)   ]
-    #     },
-    #     fallbacks = []
-    # )
 
     '''UPDATED Remove Eating Handler'''
     remove_eating_conv = ConversationHandler(
         entry_points=[CommandHandler(
             'rm_eating', REcommands.remove_eating_place)],
         states={
-            REcommands.REMOVEPLACE: [MessageHandler(Filters.regex('^(/cancel|/cancel@event_planner_bot)$'), REcommands.cancel),
+            REcommands.REMOVEPLACE: [MessageHandler(filters.Regex('^(/cancel|/cancel@event_planner_bot)$'), REcommands.cancel),
                                      CallbackQueryHandler(REcommands.remove_eating_callback)]
         },
         fallbacks=[]
@@ -176,13 +200,13 @@ def main():
     get_location_conv = ConversationHandler(
         entry_points=[CommandHandler(
             'get_info', infof.choose_location)],  # ! check this
-        states={infof.GETPLACE: [MessageHandler(Filters.regex('^(/cancel|/cancel@event_planner_bot)$'), infof.cancel),
+        states={infof.GETPLACE: [MessageHandler(filters.Regex('^(/cancel|/cancel@event_planner_bot)$'), infof.cancel),
                                  CallbackQueryHandler(
                                      infof.choose_location_callback)
                                  #
                                  ],
-                infof.CUSTOM_SEARCH_INPUT: [MessageHandler(Filters.regex('^(/cancel|/cancel@event_planner_bot)$'), infof.cancel),
-                                            MessageHandler(Filters.regex('^-+'), infof.handle_custom_search)]
+                infof.CUSTOM_SEARCH_INPUT: [MessageHandler(filters.Regex('^(/cancel|/cancel@event_planner_bot)$'), infof.cancel),
+                                            MessageHandler(filters.Regex('^-+'), infof.handle_custom_search)]
 
                 },
 
@@ -194,9 +218,12 @@ def main():
     '''
    
 
-    updater = Updater(token=TOKEN, use_context=True)
-    dp = updater.dispatcher
-    dp.add_handler(CommandHandler('start', start))
+    # updater = Updater(token=TOKEN, use_context=True)
+    # logger.info(updater.bot.get_me())
+    # dp = updater.dispatcher
+    # dp.add_handler(CommandHandler('start', start))
+    context_types = ContextTypes(context=CustomContext)
+    dp = Application.builder().token(TOKEN).updater(None).context_types(context_types).build() #todo: rename this to app
 
     """ Test Handlers for Development """
     # dp.add_handler(CommandHandler('hello', say_hello))
@@ -216,10 +243,45 @@ def main():
     dp.add_handler(add_eating_conv)
     dp.add_handler(remove_eating_conv)
     dp.add_handler(get_location_conv)
+    
+    WEBHOOK_URL = os.environ.get("WEBHOOK_URL")
+    if WEBHOOK_URL is None:
+        return Exception ("WEBHOOK_URL is not set")
+    # Pass webhook settings to telegram
+    await dp.bot.set_webhook(url=f"{WEBHOOK_URL}/telegram")
 
-    updater.start_polling()
-    updater.idle()
+
+    @app.post("/telegram")
+    async def telegram(request: Request) -> Response:
+        """Handle incoming Telegram updates by putting them into the `update_queue`"""
+        await dp.update_queue.put(
+            Update.de_json(data=await request.json(), bot=dp.bot)
+        )
+        return Response()
+    
+    @app.get('/')
+    async def root():
+        return {'message': 'Hello World'}
+    webserver = uvicorn.Server(config = uvicorn.Config(app, host = '0.0.0.0', port = 8080))
+    
+    
+    @app.exception_handler(RequestValidationError)
+    async def validation_exception_handler(request: Request, exc: RequestValidationError):
+        exc_str = f'{exc}'.replace('\n', ' ').replace('   ', ' ')
+        logging.error(f"{request}: {exc_str}")
+        content = {'status_code': 10422, 'message': exc_str, 'data': None}
+        return JSONResponse(content=content, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
+    
+    async with dp:
+
+        await dp.start()
+
+        await webserver.serve()
+        await dp.stop()
+    
+    # updater.start_polling()
+    # updater.idle()
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

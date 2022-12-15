@@ -1,22 +1,20 @@
-from telegram.ext import ConversationHandler
-from telegram.ext.callbackcontext import CallbackContext
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram.parsemode import ParseMode
-
-from telegram.update import Update
-import sqlfunctions as sqlf
-import utils
 import json  # for printing
 
+from telegram import (InlineKeyboardButton, InlineKeyboardMarkup,
+                      Update)
+from telegram.ext import CallbackContext, ConversationHandler
+from telegram.constants import ParseMode
+import sqlfunctions as sqlf
+import utils
 
 """ This command removes an eating place for the group """
 
 REMOVEPLACE = range(1)
 
 
-def cancel(update, context):
+async def cancel(update, context):
     user = update.message.from_user
-    update.message.reply_text(
+    await update.message.reply_text(
         'User canceled the remove eating place updater. Bye {}!'.format(user.first_name))
     return ConversationHandler.END
 
@@ -27,9 +25,9 @@ Remove Eating Command
 """
 
 
-def remove_eating_place(update: Update, context: CallbackContext) -> None:
+async def remove_eating_place(update: Update, context: CallbackContext) -> None:
 
-    context.bot.send_message(update.effective_chat.id,  "Loading...")
+    await context.bot.send_message(update.effective_chat.id,  "Loading...")
     # 1. Get the list of eating places for the group
     group = update.effective_chat
     group_id = str(group.id)
@@ -54,18 +52,18 @@ def remove_eating_place(update: Update, context: CallbackContext) -> None:
     # print("Keyboard: ")
 
     reply_markup = InlineKeyboardMarkup(keyboard)
-    update.message.reply_text(
+    await update.message.reply_text(
         'Please choose which place to remove, or press /cancel to stop:', reply_markup=reply_markup)
     return REMOVEPLACE
 
 
-def remove_eating_callback(update: Update, context: CallbackContext) -> None:
+async def remove_eating_callback(update: Update, context: CallbackContext) -> None:
     """Parses the CallbackQuery and updates the message text."""
     query = update.callback_query
     # print("Query")
     # print(query.to_json())
 
-    query.answer(text=f"Removing {query.data}... 🧹🧹🧹")
+    await query.answer(text=f"Removing {query.data}... 🧹🧹🧹")
     group = update.effective_chat
     group_id = str(group.id)
     print(f"Deleting {query.data}...")
@@ -79,17 +77,17 @@ def remove_eating_callback(update: Update, context: CallbackContext) -> None:
         group_title = group.title
         verification = utils.format_list(
             food_place_list=tmp_food_place_list, group_title=group_title)
-        query.edit_message_text(
+        await query.edit_message_text(
             text=f"Deleted: *{query.data}*\n\n{verification}", parse_mode=ParseMode.MARKDOWN_V2)
     else: 
-        query.edit_message_text(
+        await query.edit_message_text(
             text=f"Deleted: *{query.data}* successfully", parse_mode=ParseMode.MARKDOWN_V2)
         
 
     return ConversationHandler.END
 
 ''' DEPRECATED FUNCTIONS BELOW '''
-def old_remove(update, context):
+async def old_remove(update, context):
     # * 1) Get the current group ID and group name
     group = update.effective_chat
     group_id = str(group.id)
@@ -100,11 +98,11 @@ def old_remove(update, context):
     food_place = update.message.text
     food_place = food_place.lstrip('-').lstrip()
 
-    context.bot.send_message(update.effective_chat.id,
+    await context.bot.send_message(update.effective_chat.id,
                              "Loading ... ".format(food_place))
 
     if food_place == "":
-        update.message.reply_text("Please key a non empty food_place")
+        await update.message.reply_text("Please key a non empty food_place")
         return
 
      # * 3) Update the database if the group exists, if not return an error message
@@ -115,12 +113,12 @@ def old_remove(update, context):
             if food_place.isnumeric():
                 indexRemove = int(food_place) - 1
                 placeRemove = _food_place_list[indexRemove]
-                context.bot.send_message(
+                await context.bot.send_message(
                     update.effective_chat.id, "Removing {}... 🧹🧹🧹".format(placeRemove))
                 sqlf.remove_food_data(group_id, placeRemove.upper())
 
             else:
-                context.bot.send_message(
+                await context.bot.send_message(
                     update.effective_chat.id, "Removing {}... 🧹🧹🧹".format(food_place))
 
                 food_place = food_place.upper()
@@ -134,13 +132,13 @@ def old_remove(update, context):
                 return_string += str(idx+1) + ') ' + \
                     food_place_list[idx] + '\n'
 
-            context.bot.send_message(
+            await context.bot.send_message(
                 update.effective_chat.id, "{0} removed {1} from food places ✅ ".format(user, food_place))
-            context.bot.send_message(update.effective_chat.id, "The list of current food places for {0} is: \n{1}".format(
+            await context.bot.send_message(update.effective_chat.id, "The list of current food places for {0} is: \n{1}".format(
                 group_title, return_string))
         except Exception as e:
             print(e)
-            context.bot.send_message(
+            await context.bot.send_message(
                 update.effective_chat.id, "Error removing food place. Please check again :)")
 
         return ConversationHandler.END

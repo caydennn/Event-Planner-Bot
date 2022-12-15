@@ -1,20 +1,23 @@
-from logging import error
-from typing import Optional, Text
-from telegram.callbackquery import CallbackQuery
-from telegram.ext.callbackcontext import CallbackContext
-from telegram.inline.inlinekeyboardbutton import InlineKeyboardButton
-from telegram.inline.inlinekeyboardmarkup import InlineKeyboardMarkup
-from telegram.update import Update
-import sqlfunctions as sqlf
-import os
-import requests
-import json
 import io
-import utils
-from telegram.ext import ConversationHandler
-from os.path import join, dirname
-from dotenv import load_dotenv
+import json
+import os
+from logging import error
 from operator import itemgetter
+from os.path import dirname, join
+from typing import Optional, Text
+
+import requests
+from dotenv import load_dotenv
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, CallbackQuery
+from telegram.ext import CallbackContext, ConversationHandler
+
+import sqlfunctions as sqlf
+import utils
+
+# from telegram.inline.inlinekeyboardmarkup import InlineKeyboardMarkup
+# import inlinekeyboardmarkup
+
+
 
 dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
@@ -39,8 +42,8 @@ GETPLACE, CUSTOM_SEARCH_INPUT = range(2)
 Generates keyboard markup with group's food places so that they can choose.
 Includes a Custom Search button that allows Custom Search queries when pressed.
 '''
-def choose_location(update: Update, context: CallbackContext) -> None:
-    context.bot.send_message(update.effective_chat.id,  "Loading...")
+async def choose_location(update: Update, context: CallbackContext) -> None:
+    await context.bot.send_message(update.effective_chat.id,  "Loading...")
 
     # 1. Get the list of eating places for the group
     group = update.effective_chat
@@ -61,7 +64,7 @@ def choose_location(update: Update, context: CallbackContext) -> None:
 
     keyboard.append([InlineKeyboardButton('Custom Search', callback_data='custom_search')])
     reply_markup = InlineKeyboardMarkup(keyboard)
-    update.message.reply_text(
+    await update.message.reply_text(
         "Which place would you like to check? Press /cancel to stop.", reply_markup=reply_markup
     )
 
@@ -72,40 +75,40 @@ Handles the search operation for the choice chosen by the user from the keyboard
 If a custom search option is chosen, it will trigger a extended conversation to ask for user input. 
 '''
 
-def choose_location_callback(update: Update, context: CallbackContext) -> None:
+async def choose_location_callback(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
     food_place = query.data
     if food_place == 'custom_search':
-        query.answer("Custom Search: ")
-        query.edit_message_text("Type your custom search after a hyphen Eg. '- Mcdonalds'. Or you can /cancel your search. ")
+        await query.answer("Custom Search: ")
+        await query.edit_message_text("Type your custom search after a hyphen Eg. '- Mcdonalds'. Or you can /cancel your search. ")
         return CUSTOM_SEARCH_INPUT
-    query.answer(text=f"Getting Info about {food_place} ... 🌎🌍🌏")
-    search_and_send(update, context, food_place, query)
+    await query.answer(text=f"Getting Info about {food_place} ... 🌎🌍🌏")
+    await search_and_send(update, context, food_place, query)
     return
 
 
 
 
 
-def handle_custom_search(update: Update, context: CallbackContext):
+async def handle_custom_search(update: Update, context: CallbackContext):
     group = update.effective_chat
 
     food_place = update.message.text
     food_place = food_place.lstrip('-').lstrip()
-    context.bot.send_message(update.effective_chat.id,
+    await context.bot.send_message(update.effective_chat.id,
                              "Loading ... ".format(food_place))
 
     if food_place == "":
-        update.message.reply_text("Please key a non empty food_place")
+        await update.message.reply_text("Please key a non empty food_place")
         return
 
-    context.bot.send_message(
+    await context.bot.send_message(
             update.effective_chat.id, "Getting Info about {} ... 🌎🌍🌏".format(food_place))
 
-    search_and_send(update, context, food_place)
+    await search_and_send(update, context, food_place)
     return
 
-def search_and_send(update: Update, context: CallbackContext, search_query: Text, initial_query: Optional[CallbackQuery] = None) -> None:
+async def search_and_send(update: Update, context: CallbackContext, search_query: Text, initial_query: Optional[CallbackQuery] = None) -> None:
     '''
         Handles search operation and sending the results to the group
 
@@ -129,12 +132,12 @@ def search_and_send(update: Update, context: CallbackContext, search_query: Text
         msgToSend = """
         {0}\n{1}\n{2}
         """.format(name, address, open_string)
-        context.bot.send_photo(update.effective_chat.id,
+        await context.bot.send_photo(update.effective_chat.id,
                                img, caption=msgToSend, parse_mode=None)
-        context.bot.send_location(
+        await context.bot.send_location(
             update.effective_chat.id, latitude=lat, longitude=lng)
         if initial_query:
-            initial_query.edit_message_text(
+            await initial_query.edit_message_text(
                 text=f"Info about {search_query} retrieved successfully.")
     except Exception as e:
         print(e)
@@ -142,18 +145,18 @@ def search_and_send(update: Update, context: CallbackContext, search_query: Text
         # context.bot.send_message(update.effective_chat.id, "Error getting info about food place. Please check again :)")
         error_text = f"Sorry, something went wrong while retrieving information about {search_query}. 😔"
         if initial_query:
-            initial_query.edit_message_text(
+            await initial_query.edit_message_text(
                 text=error_text)
         else: 
-            update.message.reply_text(error_text)
+            await update.message.reply_text(error_text)
         if results:
             print(results)
 
     return ConversationHandler.END
 
-def cancel(update, context):
+async def cancel(update, context):
     user = update.message.from_user
-    update.message.reply_text('Aww okay, bye {}!'.format(user.first_name))
+    await  update.message.reply_text('Aww okay, bye {}!'.format(user.first_name))
     return ConversationHandler.END
 
 # print(get_results("Junction 8 Macs"))

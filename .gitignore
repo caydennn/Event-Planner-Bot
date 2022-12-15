@@ -13,3 +13,6 @@
 
 **/Google*Search*Notebook/
 Google\Search\Notebook
+
+__pycache__
+latest.dump
