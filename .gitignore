@@ -16,3 +16,5 @@ Google\Search\Notebook
 
 __pycache__
 latest.dump
+
+*.env

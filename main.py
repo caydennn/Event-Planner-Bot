@@ -5,7 +5,7 @@ import os
 import random
 from dataclasses import dataclass
 from os.path import dirname, join
-
+import argparse
 import uvicorn
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, Response, status
@@ -23,7 +23,7 @@ import infoFunctions as infof
 import pollFunctions as pollf
 import removeEatingCommands as REcommands
 import sqlfunctions as sqlf
-
+import sys
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -164,15 +164,33 @@ class CustomContext(CallbackContext[ExtBot, dict, dict, dict]):
         return super().from_update(update, application)
 
 async def main() -> None:
-    dotenv_path = join(dirname(__file__), '.env')
-    load_dotenv(dotenv_path)
-    TOKEN = os.environ.get("TOKEN")
-    app = FastAPI()
+    #setup arg parsier
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+    "-env", "--environment", dest="env", help="Environment type", required=True
+    )
+    args = parser.parse_args()
     
+    if args.env == "dev":
+        print("Using dev environment")
+        dotenv_path = join(dirname(__file__), '.dev.env')
+        load_dotenv(dotenv_path)
+        TOKEN = os.environ.get("DEV_TOKEN")
+    elif args.env == "prod":
+        print("Using prod environment")
+        dotenv_path = join(dirname(__file__), '.prod.env')
+        load_dotenv(dotenv_path)
+        TOKEN = os.environ.get("TOKEN")
+    else:
+        logging.error("Invalid environment type")
+        sys.exit()
+        
+    WEBHOOK_URL = os.environ.get("WEBHOOK_URL")
    
-    
-    
-    
+
+
+
+    app = FastAPI()
     print ("TOKEN is {}".format(TOKEN))
     ''' 
     Add Eating Conversation Handler 
@@ -216,47 +234,39 @@ async def main() -> None:
     '''
     Get Info Conversation Handler
     '''
-   
-
-    # updater = Updater(token=TOKEN, use_context=True)
-    # logger.info(updater.bot.get_me())
-    # dp = updater.dispatcher
-    # dp.add_handler(CommandHandler('start', start))
     context_types = ContextTypes(context=CustomContext)
-    dp = Application.builder().token(TOKEN).updater(None).context_types(context_types).build() #todo: rename this to app
+    application = Application.builder().token(TOKEN).updater(None).context_types(context_types).build() #todo: rename this to app
 
     """ Test Handlers for Development """
-    # dp.add_handler(CommandHandler('hello', say_hello))
-    # dp.add_handler(CommandHandler('get_bot', get_bot))
-    # dp.add_handler(CommandHandler('echo', echo))
-    # dp.add_handler(MessageHandler(Filters.location, infof.test_get_location))
-    # dp.add_handler(CommandHandler('kbstart', kbstart))
+    # application.add_handler(CommandHandler('hello', say_hello))
+    # application.add_handler(CommandHandler('get_bot', get_bot))
+    # application.add_handler(CommandHandler('echo', echo))
+    # application.add_handler(MessageHandler(Filters.location, infof.test_get_location))
+    # application.add_handler(CommandHandler('kbstart', kbstart))
 
 
     """ Handlers """
-    # dp.add_handler(CommandHandler('add_eating', add_eating))
-    dp.add_handler(CommandHandler('help', help))
-    dp.add_handler(CommandHandler('list_eat', list_eating))
-    dp.add_handler(CommandHandler('get_eat', get_random_eating))
-    dp.add_handler(CommandHandler('create_poll', pollf.createPoll))
+    # application.add_handler(CommandHandler('add_eating', add_eating))
+    application.add_handler(CommandHandler('help', help))
+    application.add_handler(CommandHandler('list_eat', list_eating))
+    application.add_handler(CommandHandler('get_eat', get_random_eating))
+    application.add_handler(CommandHandler('create_poll', pollf.createPoll))
     
-    dp.add_handler(add_eating_conv)
-    dp.add_handler(remove_eating_conv)
-    dp.add_handler(get_location_conv)
+    application.add_handler(add_eating_conv)
+    application.add_handler(remove_eating_conv)
+    application.add_handler(get_location_conv)
     
-    WEBHOOK_URL = os.environ.get("WEBHOOK_URL")
     if WEBHOOK_URL is None:
         return Exception ("WEBHOOK_URL is not set")
     # Pass webhook settings to telegram
-    await dp.bot.set_webhook(url=f"{WEBHOOK_URL}/telegram")
-    logger.info("Webhook set")
-
+    await application.bot.set_webhook(url=f"{WEBHOOK_URL}/telegram")
+    logger.info("Webhook set to {}/telegram".format(WEBHOOK_URL))
 
     @app.post("/telegram")
     async def telegram(request: Request) -> Response:
         """Handle incoming Telegram updates by putting them into the `update_queue`"""
-        await dp.update_queue.put(
-            Update.de_json(data=await request.json(), bot=dp.bot)
+        await application.update_queue.put(
+            Update.de_json(data=await request.json(), bot=application.bot)
         )
         return Response()
     
@@ -272,7 +282,7 @@ async def main() -> None:
     
     @app.get("/set_webhook")
     async def set_webhook(_: Request) -> PlainTextResponse:
-        await dp.bot.set_webhook(url=f"{WEBHOOK_URL}/telegram")
+        await application.bot.set_webhook(url=f"{WEBHOOK_URL}/telegram")
         return PlainTextResponse(content=f"Webhook set to {WEBHOOK_URL}/telegram")
     
     @app.exception_handler(RequestValidationError)
@@ -282,12 +292,12 @@ async def main() -> None:
         content = {'status_code': 10422, 'message': exc_str, 'data': None}
         return JSONResponse(content=content, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
     
-    async with dp:
+    async with application:
 
-        await dp.start()
+        await application.start()
 
         await webserver.serve()
-        await dp.stop()
+        await application.stop()
     
     # updater.start_polling()
     # updater.idle()

@@ -4,7 +4,8 @@ import os
 from os.path import join, dirname
 from dotenv import load_dotenv
 import pytz
-dotenv_path = join(dirname(__file__), '.env')
+# dotenv_path = join(dirname(__file__), '.env')
+dotenv_path = join(dirname(__file__), '.dev.env')
 load_dotenv(dotenv_path)
 
 DB_NAME = os.environ.get("DB_NAME") 
@@ -16,7 +17,7 @@ DB_PORT = os.environ.get("DB_PORT")
 def connect():
     try: 
         conn = psycopg2.connect(database = DB_NAME, user = DB_USER,
-                            password = DB_PASS, host = DB_HOST, port = DB_PORT)
+                            password = DB_PASS, host = DB_HOST, port = DB_PORT, options= "-c search_path=public")
 
         print ('Database connected succcessfully')
         return conn
@@ -87,7 +88,7 @@ def get_group_food_data(group_id):
         conn = connect()
         cur = conn.cursor()
         sql_command = """SELECT groupfood.food_place
-                        FROM groupfood 
+                        FROM public.groupfood 
                         WHERE group_id = {}""".format(group_id)
         cur.execute(sql_command)
         rows = cur.fetchall()
@@ -284,6 +285,10 @@ def change_data_type():
     print("data type changed successfully")
     conn.commit()
     conn.close()
+    
+    
+# list_tables()
+# list_all_food_data()
 # change_data_type()
 # insert_food_data("EFF0RT", "TEST Macs")
 # list_food_data()
