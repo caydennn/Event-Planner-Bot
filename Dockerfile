@@ -1,4 +1,4 @@
-FROM python:3.9.15-slim-buster
+FROM python:3.9.15-slim-bullseye
 
 
 RUN apt-get update \
